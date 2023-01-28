@@ -1,0 +1,11 @@
+import commands
+
+class HelloWorld from commands.Commands {
+
+    @commands.command("hello")
+    func hello(ctx: commands.Context, args: commands.Arguments) {
+        var user = args.require|User|(0) ?? ctx.user;
+        ctx.reply("Hello, {}!".format(user.name));
+    }
+
+}
