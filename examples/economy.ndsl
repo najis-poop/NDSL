@@ -1,0 +1,61 @@
+import commands
+import storage
+
+type UserEconomy = { id: int, bal: int };
+
+var economydb = storage.get|UserEconomy|("economy");
+
+class SimpleEconomy from commands.Commands {
+
+    func get_user(id: int) storage.Model|UserEconomy| {
+        var user = economydb.get((u) => (u.id == id));
+        if not user {
+            return economydb.add(UserEconomy(id, 100));
+        }
+        return user;
+    }
+
+    @commands.command("balance", aliases=["bal"])
+    func balance(ctx: commands.Context, args: commands.Arguments) {
+        var user = args.require|User|(0) ?? ctx.user;
+
+        var ue = this.get_user(user.id);
+
+        ctx.reply("{} balance is ${}".format(user.name, ue.id));
+    }
+
+    @commands.command("pay")
+    func pay(ctx: commands.Context, args: commands.Arguments) {
+        var amount = args.require|int|(0);
+        var who = args.require|User|(1);
+        
+
+        var receiver = this.get_user(who.id);
+        var payer = this.get_user(ctx.user.id);
+
+        if payer.bal < amount {
+            ctx.reply("You don't have enough amount of money (balance is ${})".format(payer.bal));
+            return;
+        }
+
+        payer.bal -= amount;
+        receiver.bal += amount;
+
+        economydb.update(payer, receiver);
+        ctx.reply("{} pay ${} to {}", ctx.user.name, amount, who.name);
+    }
+
+    @commands.command("give")
+    func admin_pay(ctx: commands.Context, args: commands.Arguments) {
+        var amount = args.require|int|(0);
+        var who = args.require|User|(1);
+
+        var receiver = this.get_user(who.id);
+
+        receiver.bal += amount;
+
+        economydb.update(receiver);
+        ctx.reply("Added ${} to {} balance", amount, who.name);
+    }
+
+}
